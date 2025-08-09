@@ -1,0 +1,9 @@
+#root {
+  width: 320px;
+  min-height: 120px;
+}
+
+button:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+} 
