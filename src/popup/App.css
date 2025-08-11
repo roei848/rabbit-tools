@@ -2,6 +2,8 @@
   padding: 12px;
   font-family: Inter, system-ui, sans-serif;
   width: 360px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .json-input {
@@ -23,6 +25,7 @@
   align-items: center;
   gap: 8px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .btn {
@@ -31,6 +34,16 @@
   border: none;
   cursor: pointer;
   color: white;
+  transition: filter 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+}
+
+.btn:hover {
+  filter: brightness(1.1);
+}
+
+.btn:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
 }
 
 .btn-primary {

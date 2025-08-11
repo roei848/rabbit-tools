@@ -8,6 +8,7 @@ export default {
     rollupOptions: {
       input: {
         popup: resolve(process.cwd(), "popup.html"),
+        viewer: resolve(process.cwd(), "viewer.html"),
       },
     },
   },

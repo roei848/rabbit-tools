@@ -1,0 +1,76 @@
+.viewer-container {
+  font-family: Inter, system-ui, sans-serif;
+  padding: 12px;
+}
+
+.viewer-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.viewer-toolbar .spacer {
+  flex: 1 1 auto;
+}
+
+.btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+}
+
+.error-bar {
+  color: #dc2626;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.viewer-content {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.json-tree .node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: pre;
+}
+
+.json-tree .toggle {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.json-tree .chevron {
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform 0.1s ease-in-out;
+}
+
+.json-tree .chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.json-tree .label {
+  color: #1f2937;
+}
+
+.json-tree .summary {
+  color: #6b7280;
+}
+
+.json-tree .value-string { color: #059669; }
+.json-tree .value-number { color: #2563eb; }
+.json-tree .value-boolean { color: #7c3aed; }
+.json-tree .value-object { color: #111827; } 

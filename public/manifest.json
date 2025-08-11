@@ -7,5 +7,5 @@
     "default_title": "MrRabbitTools",
     "default_popup": "popup.html"
   },
-  "permissions": []
+  "permissions": ["storage"]
 } 
