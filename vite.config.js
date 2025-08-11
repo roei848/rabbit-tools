@@ -9,6 +9,7 @@ export default {
       input: {
         popup: resolve(process.cwd(), "popup.html"),
         viewer: resolve(process.cwd(), "viewer.html"),
+        "xml-viewer": resolve(process.cwd(), "xml-viewer.html"),
       },
     },
   },
