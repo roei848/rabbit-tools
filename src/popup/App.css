@@ -2,6 +2,7 @@
   padding: 12px;
   font-family: Inter, system-ui, sans-serif;
   width: 720px;
+  min-width: 720px;
   max-width: 100%;
   box-sizing: border-box;
 }
