@@ -3,9 +3,15 @@
   "name": "MrRabbitTools",
   "version": "1.0.0",
   "description": "A simple Chrome extension with a React popup that says Hey.",
+  "icons": {
+    "16": "imgs/icon_16x16.png",
+    "32": "imgs/icon_32x32.png",
+    "48": "imgs/icon_48x48.png",
+    "128": "imgs/icon_128x128.png"
+  },
   "action": {
     "default_title": "MrRabbitTools",
     "default_popup": "popup.html"
   },
   "permissions": ["storage"]
-} 
+}
