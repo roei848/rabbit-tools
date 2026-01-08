@@ -9,6 +9,7 @@ import {
 
 const MODEL = "google/gemini-2.0-flash-lite-001";
 const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+const LATEST_PASSENGER_STORAGE_KEY = "mrrabbittools_latest_passenger";
 
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
@@ -69,6 +70,39 @@ function CopyIcon() {
 }
 
 function fillPassengerForm({ firstName, lastName, birthdate }) {
+  const findBestPassengerRoot = () => {
+    // Find containers that look like a passenger section (contain both name inputs).
+    const candidates = Array.from(
+      document.querySelectorAll('input[name="first-name"]'),
+    )
+      .map((inp) => inp.parentElement)
+      .map((el) => el?.closest?.("div"))
+      .filter(Boolean)
+      .map((el) => {
+        let cur = el;
+        while (cur && cur !== document.documentElement) {
+          if (
+            cur.querySelector?.('input[name="first-name"]') &&
+            cur.querySelector?.('input[name="last-name"]')
+          ) {
+            return cur;
+          }
+          cur = cur.parentElement;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    // Prefer the first passenger block with empty name fields.
+    const emptyOne = candidates.find((root) => {
+      const fn = root.querySelector('input[name="first-name"]');
+      const ln = root.querySelector('input[name="last-name"]');
+      return (fn && !fn.value) || (ln && !ln.value);
+    });
+
+    return emptyOne || candidates[0] || document;
+  };
+
   const setInputValueWithEvents = (el, value) => {
     if (!el) return false;
     el.focus?.();
@@ -86,10 +120,15 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
     return true;
   };
 
+  const passengerRoot = findBestPassengerRoot();
   const firstNameInput =
+    passengerRoot.querySelector?.('input[name="first-name"]') ||
+    passengerRoot.querySelector?.('input[nagish-text="passenger first name"]') ||
     document.querySelector('input[name="first-name"]') ||
     document.querySelector('input[nagish-text="passenger first name"]');
   const lastNameInput =
+    passengerRoot.querySelector?.('input[name="last-name"]') ||
+    passengerRoot.querySelector?.('input[nagish-text="passenger last name"]') ||
     document.querySelector('input[name="last-name"]') ||
     document.querySelector('input[nagish-text="passenger last name"]');
 
@@ -97,7 +136,12 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
   const okLast = setInputValueWithEvents(lastNameInput, lastName);
 
   const [dd, mm, yyyy] = (birthdate || "").split("/");
-  const allSelects = Array.from(document.querySelectorAll("select"));
+  const birthPicker =
+    passengerRoot.querySelector?.('[id$="birthdatePicker"]') || passengerRoot;
+  const allSelects = Array.from(
+    (birthPicker || document).querySelectorAll?.("select") ||
+      document.querySelectorAll("select"),
+  );
   const yearSelect = allSelects.find((s) => s.querySelector('option[value="YYYY"]'));
   const monthSelect = allSelects.find((s) => s.querySelector('option[value="MM"]'));
   const daySelect = allSelects.find((s) => s.querySelector('option[value="DD"]'));
@@ -154,6 +198,16 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
       setBirthdate(nextBirthdate);
       setProfession(nextProfession);
       setBackground("");
+
+      if (typeof chrome !== "undefined" && chrome.storage?.local) {
+        chrome.storage.local.set({
+          [LATEST_PASSENGER_STORAGE_KEY]: {
+            firstName: nextFirstName,
+            lastName: nextLastName,
+            birthdate: nextBirthdate,
+          },
+        });
+      }
 
       const content = await sendOpenRouterChat({
         apiKey: API_KEY,
