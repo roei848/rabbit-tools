@@ -1,5 +1,8 @@
 const MENU_ID = "mrrabbittools_autofill_passenger";
 const STORAGE_KEY = "mrrabbittools_latest_passenger";
+const PASSENGER_TYPE_STORAGE_KEY = "mrrabbittools_passenger_type";
+// If we can read the year options from the page, prefer that over this constant.
+const CURRENT_YEAR = 2026;
 
 // Local fallback generator (no AI) for right-click autofill.
 // Note: duplicated from popup static data on purpose to keep background.js standalone.
@@ -213,26 +216,6 @@ function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function randomBirthdate() {
-  // Must be over 18 in 2026 => born on/before 2007-12-31.
-  const year = 1950 + Math.floor(Math.random() * (2007 - 1950 + 1));
-  const month = 1 + Math.floor(Math.random() * 12);
-  const day = 1 + Math.floor(Math.random() * 28);
-  return `${pad2(day)}/${pad2(month)}/${year}`;
-}
-
-function generatePassenger() {
-  return {
-    firstName: pick(ISRAELI_FIRST_NAMES),
-    lastName: pick(ISRAELI_LAST_NAMES),
-    birthdate: randomBirthdate(),
-  };
-}
-
 function ensureMenu() {
   try {
     chrome.contextMenus.remove(MENU_ID, () => {
@@ -255,7 +238,46 @@ chrome.runtime.onStartup?.addListener(() => {
   ensureMenu();
 });
 
-function fillPassengerForm({ firstName, lastName, birthdate }) {
+function fillPassengerForm({ firstName, lastName, passengerType }) {
+  // IMPORTANT: This function is injected into the page via chrome.scripting.executeScript.
+  // It must be self-contained (no references to outer-scope helpers).
+  const CURRENT_YEAR_FALLBACK = 2026;
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  const getBirthYearRange = (referenceYear, type) => {
+    if (type === "child") return { min: referenceYear - 17, max: referenceYear - 5 };
+    if (type === "senior") return { min: referenceYear - 90, max: referenceYear - 66 };
+    if (type === "infant") return { min: referenceYear - 2, max: referenceYear };
+    return { min: referenceYear - 64, max: referenceYear - 19 }; // adult default
+  };
+
+  const pickBirthYearFromSelect = (yearSelect, type) => {
+    const optionYears = Array.from(yearSelect?.options || [])
+      .map((o) => Number(o.value))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    const referenceYear = optionYears.length
+      ? Math.max(...optionYears)
+      : CURRENT_YEAR_FALLBACK;
+    const { min, max } = getBirthYearRange(referenceYear, type);
+    const inRange = optionYears.filter((y) => y >= min && y <= max);
+
+    if (inRange.length) {
+      return String(inRange[Math.floor(Math.random() * inRange.length)]);
+    }
+
+    // Fallback: middle option (ignoring the YYYY placeholder).
+    const numericOptions = Array.from(yearSelect?.options || [])
+      .map((o) => o.value)
+      .filter((v) => /^\d{4}$/.test(v) && v !== "0000");
+    if (numericOptions.length) {
+      return numericOptions[Math.floor(numericOptions.length / 2)];
+    }
+
+    return String(referenceYear);
+  };
+
   const findPassengerContainerFromActive = () => {
     const active = document.activeElement;
     if (!active || active === document.body) return null;
@@ -343,7 +365,8 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
   const okFirst = setInputValueWithEvents(firstNameInput, firstName);
   const okLast = setInputValueWithEvents(lastNameInput, lastName);
 
-  const [dd, mm, yyyy] = (birthdate || "").split("/");
+  const dd = pad2(1 + Math.floor(Math.random() * 28));
+  const mm = pad2(1 + Math.floor(Math.random() * 12));
   const birthPicker =
     passengerRoot?.querySelector?.('[id$="birthdatePicker"]') ||
     passengerRoot ||
@@ -362,11 +385,14 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
     tabGroup?.day ||
     allSelects.find((s) => s.querySelector('option[value="DD"]'));
 
+  const yyyy = yearSelect
+    ? pickBirthYearFromSelect(yearSelect, passengerType || "adult")
+    : "";
   const okYear = yyyy ? setSelectValueWithEvents(yearSelect, yyyy) : false;
   const okMonth = mm ? setSelectValueWithEvents(monthSelect, mm) : false;
   const okDay = dd ? setSelectValueWithEvents(daySelect, dd) : false;
 
-  return { okFirst, okLast, okYear, okMonth, okDay };
+  return { okFirst, okLast, okYear, okMonth, okDay, birthdate: `${dd}/${mm}/${yyyy}` };
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -374,13 +400,30 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   const tabId = tab?.id;
   if (!tabId) return;
 
-  // Always generate a fresh passenger per right-click action.
-  const passenger = generatePassenger();
-  chrome.storage.local.set({ [STORAGE_KEY]: passenger }, () => {
-    chrome.scripting.executeScript({
-      target: { tabId },
-      func: fillPassengerForm,
-      args: [passenger],
-    });
+  chrome.storage.local.get([PASSENGER_TYPE_STORAGE_KEY], (res) => {
+    const type = res?.[PASSENGER_TYPE_STORAGE_KEY] || "adult";
+    const passenger = {
+      firstName: pick(ISRAELI_FIRST_NAMES),
+      lastName: pick(ISRAELI_LAST_NAMES),
+      passengerType: type,
+    };
+
+    chrome.scripting.executeScript(
+      {
+        target: { tabId },
+        func: fillPassengerForm,
+        args: [passenger],
+      },
+      (results) => {
+        const result = results?.[0]?.result;
+        const stored = {
+          firstName: passenger.firstName,
+          lastName: passenger.lastName,
+          birthdate: result?.birthdate || "",
+          passengerType: type,
+        };
+        chrome.storage.local.set({ [STORAGE_KEY]: stored });
+      },
+    );
   });
 });

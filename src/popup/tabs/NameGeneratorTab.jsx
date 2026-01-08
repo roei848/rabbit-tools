@@ -10,6 +10,22 @@ import {
 const MODEL = "google/gemini-2.0-flash-lite-001";
 const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const LATEST_PASSENGER_STORAGE_KEY = "mrrabbittools_latest_passenger";
+const PASSENGER_TYPE_STORAGE_KEY = "mrrabbittools_passenger_type";
+const CURRENT_YEAR = 2026;
+
+function getProfessionForPassengerType(passengerType) {
+  if (passengerType === "infant") return "Baby";
+  if (passengerType === "child") return "Child labor worker";
+  if (passengerType === "senior") return "Pensioner";
+  return pick(PROFESSIONS);
+}
+
+const PASSENGER_TYPES = [
+  { id: "adult", label: "Adult (18–65)" },
+  { id: "child", label: "Child (2–17)" },
+  { id: "senior", label: "Senior (above 65)" },
+  { id: "infant", label: "Infant (under 2)" },
+];
 
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
@@ -19,27 +35,62 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
-function randomBirthdate() {
-  // Must be over 18 in 2026 => born on/before 2007-12-31.
-  const year = 1950 + Math.floor(Math.random() * (2007 - 1950 + 1));
+function randomIntInclusive(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function getBirthYearRange(passengerType) {
+  if (passengerType === "child") {
+    return { min: CURRENT_YEAR - 17, max: CURRENT_YEAR - 5 };
+  }
+  if (passengerType === "senior") {
+    return { min: CURRENT_YEAR - 90, max: CURRENT_YEAR - 66 };
+  }
+  if (passengerType === "infant") {
+    return { min: CURRENT_YEAR - 2, max: CURRENT_YEAR };
+  }
+  // adult (default): 19-64
+  return { min: CURRENT_YEAR - 64, max: CURRENT_YEAR - 19 };
+}
+
+function randomBirthdate(passengerType) {
+  const { min, max } = getBirthYearRange(passengerType);
+  const year = randomIntInclusive(min, max);
   const month = 1 + Math.floor(Math.random() * 12);
   const day = 1 + Math.floor(Math.random() * 28); // keep simple/valid for all months
   return `${pad2(day)}/${pad2(month)}/${year}`;
 }
 
-function buildBackgroundPrompt({ firstName, lastName, birthdate, profession, nonce }) {
+function buildBackgroundPrompt({
+  firstName,
+  lastName,
+  birthdate,
+  profession,
+  passengerType,
+  nonce,
+}) {
+  const ageHint =
+    passengerType === "infant"
+      ? "Age: infant (under 2)"
+      : passengerType === "child"
+        ? "Age: child (2–17)"
+        : passengerType === "senior"
+          ? "Age: senior (above 65)"
+          : "Age: adult (18–65)";
+
   return `Generate a fictional character background story for this character:
 
 FIRST_NAME: ${firstName}
 LAST_NAME: ${lastName}
 BIRTHDATE: ${birthdate}
 PROFESSION: ${profession}
+${ageHint}
 
 Requirements:
 - 2 sentences, no more than 12 words each.
-- First sentence is about the character's name and profession.
+- First sentence is about the character's name, profession, and age group.
 - Second sentence is crazy, bizzare fact about the character.
-- The character must be over 18 years old (current year is 2026).
+- Must match the age group above (no adult job for infants, etc.).
 - No intro text, no labels, no markdown. Output ONLY the background story text.
 
 INTERNAL_REQUEST_ID (do not output): ${nonce}`;
@@ -164,6 +215,7 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
   const [copiedField, setCopiedField] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [fillMessage, setFillMessage] = useState("");
+  const [passengerType, setPassengerType] = useState("adult");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -180,7 +232,22 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
         "Missing OpenRouter API key. Add VITE_OPENROUTER_API_KEY to .env.local and rebuild."
       );
     }
+
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      chrome.storage.local.get([PASSENGER_TYPE_STORAGE_KEY], (res) => {
+        const t = res?.[PASSENGER_TYPE_STORAGE_KEY];
+        if (t && PASSENGER_TYPES.some((x) => x.id === t)) {
+          setPassengerType(t);
+        }
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      chrome.storage.local.set({ [PASSENGER_TYPE_STORAGE_KEY]: passengerType });
+    }
+  }, [passengerType]);
 
   const handleGenerate = async () => {
     setErrorMessage("");
@@ -190,8 +257,8 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
       const nonce = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const nextFirstName = pick(ISRAELI_FIRST_NAMES);
       const nextLastName = pick(ISRAELI_LAST_NAMES);
-      const nextBirthdate = randomBirthdate();
-      const nextProfession = pick(PROFESSIONS);
+      const nextBirthdate = randomBirthdate(passengerType);
+      const nextProfession = getProfessionForPassengerType(passengerType);
 
       setFirstName(nextFirstName);
       setLastName(nextLastName);
@@ -217,6 +284,7 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
           lastName: nextLastName,
           birthdate: nextBirthdate,
           profession: nextProfession,
+          passengerType,
           nonce,
         }),
         maxTokens: 500,
@@ -327,6 +395,21 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
           Fill Form
         </button>
         {fillMessage && <span className="copied">{fillMessage}</span>}
+      </div>
+
+      <div className="radio-group">
+        {PASSENGER_TYPES.map((t) => (
+          <label key={t.id} className="radio-pill">
+            <input
+              type="radio"
+              name="passenger-type"
+              value={t.id}
+              checked={passengerType === t.id}
+              onChange={() => setPassengerType(t.id)}
+            />
+            <span>{t.label}</span>
+          </label>
+        ))}
       </div>
       <div className="profile-grid">
         <div className="profile-field">

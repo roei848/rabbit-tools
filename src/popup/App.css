@@ -183,6 +183,37 @@
   outline-offset: 2px;
 }
 
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.radio-pill input {
+  margin: 0;
+}
+
+.radio-pill:has(input:checked) {
+  border-color: #111827;
+  background: #f9fafb;
+  color: #111827;
+}
+
 .btn-primary {
   background: #6e09d3;
 }
