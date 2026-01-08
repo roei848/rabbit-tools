@@ -68,16 +68,67 @@ function CopyIcon() {
   );
 }
 
+function fillPassengerForm({ firstName, lastName, birthdate }) {
+  const setInputValueWithEvents = (el, value) => {
+    if (!el) return false;
+    el.focus?.();
+    el.value = value;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  };
+
+  const setSelectValueWithEvents = (el, value) => {
+    if (!el) return false;
+    el.focus?.();
+    el.value = value;
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  };
+
+  const firstNameInput =
+    document.querySelector('input[name="first-name"]') ||
+    document.querySelector('input[nagish-text="passenger first name"]');
+  const lastNameInput =
+    document.querySelector('input[name="last-name"]') ||
+    document.querySelector('input[nagish-text="passenger last name"]');
+
+  const okFirst = setInputValueWithEvents(firstNameInput, firstName);
+  const okLast = setInputValueWithEvents(lastNameInput, lastName);
+
+  const [dd, mm, yyyy] = (birthdate || "").split("/");
+  const allSelects = Array.from(document.querySelectorAll("select"));
+  const yearSelect = allSelects.find((s) => s.querySelector('option[value="YYYY"]'));
+  const monthSelect = allSelects.find((s) => s.querySelector('option[value="MM"]'));
+  const daySelect = allSelects.find((s) => s.querySelector('option[value="DD"]'));
+
+  const okYear = yyyy ? setSelectValueWithEvents(yearSelect, yyyy) : false;
+  const okMonth = mm ? setSelectValueWithEvents(monthSelect, mm) : false;
+  const okDay = dd ? setSelectValueWithEvents(daySelect, dd) : false;
+
+  return {
+    okFirst,
+    okLast,
+    okYear,
+    okMonth,
+    okDay,
+  };
+}
+
 export default function NameGeneratorTab({ inputValue, setInputValue }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [copiedField, setCopiedField] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [fillMessage, setFillMessage] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [profession, setProfession] = useState("");
   const [background, setBackground] = useState("");
+  const isFillReady =
+    Boolean(firstName.trim()) &&
+    Boolean(lastName.trim()) &&
+    /^\d{2}\/\d{2}\/\d{4}$/.test(birthdate.trim());
 
   useEffect(() => {
     if (!API_KEY) {
@@ -89,7 +140,7 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
 
   const handleGenerate = async () => {
     setErrorMessage("");
-    setCopied(false);
+    setFillMessage("");
     setIsLoading(true);
     try {
       const nonce = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -130,24 +181,65 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
     }
   };
 
-  const handleCopy = async () => {
+  const handleFillForm = async () => {
     setErrorMessage("");
-    setCopied(false);
+    setFillMessage("");
     try {
-      const fullText = `FIRST_NAME: ${firstName} LAST_NAME: ${lastName} BIRTHDATE: ${birthdate}\nPROFESSION: ${profession}\nBACKGROUND: ${background}`;
-      await navigator.clipboard.writeText(fullText.trim());
-      setCopied(true);
-    } catch {
-      setErrorMessage("Failed to copy");
-    }
-  };
+      if (
+        typeof chrome === "undefined" ||
+        !chrome.tabs ||
+        !chrome.scripting ||
+        !chrome.tabs.query
+      ) {
+        throw new Error("Fill Form is only available in the Chrome extension.");
+      }
 
-  const handleOpenInTab = () => {
-    const base =
-      typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL
-        ? chrome.runtime.getURL("popup.html")
-        : "/popup.html";
-    window.open(base, "_blank");
+      if (!firstName || !lastName || !birthdate) {
+        throw new Error("Generate a character first.");
+      }
+
+      const tabId = await new Promise((resolve, reject) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const err = chrome.runtime?.lastError;
+          if (err) return reject(err);
+          const id = tabs?.[0]?.id;
+          if (!id) return reject(new Error("No active tab found"));
+          return resolve(id);
+        });
+      });
+
+      const results = await new Promise((resolve, reject) => {
+        chrome.scripting.executeScript(
+          {
+            target: { tabId },
+            func: fillPassengerForm,
+            args: [{ firstName, lastName, birthdate }],
+          },
+          (res) => {
+            const err = chrome.runtime?.lastError;
+            if (err) return reject(err);
+            return resolve(res);
+          },
+        );
+      });
+
+      const result = results?.[0]?.result;
+      if (!result) {
+        setFillMessage("Tried to fill form (no result).");
+        return;
+      }
+
+      const okAll =
+        result.okFirst &&
+        result.okLast &&
+        result.okYear &&
+        result.okMonth &&
+        result.okDay;
+
+      setFillMessage(okAll ? "Form filled!" : "Partially filled (check fields).");
+    } catch (error) {
+      setErrorMessage(error?.message || "Failed to fill form");
+    }
   };
 
   const handleCopyField = async (value, fieldId) => {
@@ -173,13 +265,14 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
         >
           {isLoading ? "Generating..." : "Generate Character (AI)"}
         </button>
-        <button onClick={handleOpenInTab} className="btn btn-secondary">
-          Open in Tab
+        <button
+          onClick={handleFillForm}
+          className="btn btn-secondary"
+          disabled={isLoading || !isFillReady}
+        >
+          Fill Form
         </button>
-        <button onClick={handleCopy} className="btn btn-secondary">
-          Copy
-        </button>
-        {copied && <span className="copied">Copied!</span>}
+        {fillMessage && <span className="copied">{fillMessage}</span>}
       </div>
       <div className="profile-grid">
         <div className="profile-field">

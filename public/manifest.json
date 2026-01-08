@@ -13,6 +13,6 @@
     "default_title": "MrRabbitTools",
     "default_popup": "popup.html"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
   "host_permissions": ["https://openrouter.ai/*"]
 }

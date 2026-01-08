@@ -169,6 +169,15 @@
   filter: brightness(1.1);
 }
 
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  filter: none;
+}
+
 .btn:focus-visible {
   outline: 2px solid #a78bfa;
   outline-offset: 2px;
