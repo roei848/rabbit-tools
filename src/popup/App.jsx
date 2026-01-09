@@ -18,7 +18,15 @@ const TABS = [
 
 function App() {
   const [activeTab, setActiveTab] = useState("json");
-  const [inputValue, setInputValue] = useState("");
+  const [inputsByTab, setInputsByTab] = useState({});
+
+  const inputValue = inputsByTab[activeTab] || "";
+  const setInputValue = (next) => {
+    setInputsByTab((prev) => ({
+      ...prev,
+      [activeTab]: typeof next === "function" ? next(prev[activeTab] || "") : next,
+    }));
+  };
 
   const renderTab = () => {
     if (activeTab === "json") {

@@ -217,17 +217,18 @@ function pick(list) {
 }
 
 function ensureMenu() {
-  try {
-    chrome.contextMenus.remove(MENU_ID, () => {
-      chrome.contextMenus.create({
+  // removeAll() avoids "Cannot find menu item with id ..." warnings entirely.
+  chrome.contextMenus.removeAll(() => {
+    void chrome.runtime?.lastError;
+    chrome.contextMenus.create(
+      {
         id: MENU_ID,
         title: "MrRabbitTools: Autofill passenger",
         contexts: ["editable"],
-      });
-    });
-  } catch {
-    // ignore
-  }
+      },
+      () => void chrome.runtime?.lastError,
+    );
+  });
 }
 
 chrome.runtime.onInstalled.addListener(() => {

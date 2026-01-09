@@ -51,10 +51,26 @@
   font-size: 14px;
 }
 
-.html-viewer, .jibrish-viewer {
+.html-viewer {
   display: flex;
   gap: 12px;
   height: 300px;
+}
+
+.jibrish-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jibrish-viewer .json-input {
+  height: 260px;
+  resize: vertical;
+}
+
+.jibrish-viewer .actions {
+  margin-top: 0;
+  justify-content: flex-end;
 }
 
 .html-input-section {

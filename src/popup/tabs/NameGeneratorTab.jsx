@@ -15,7 +15,8 @@ const CURRENT_YEAR = 2026;
 
 function getProfessionForPassengerType(passengerType) {
   if (passengerType === "infant") return "Baby";
-  if (passengerType === "child") return "Child labor worker";
+  if (passengerType === "child")
+    return "Sweatshop factory worker in Bangladesh";
   if (passengerType === "senior") return "Pensioner";
   return pick(PROFESSIONS);
 }
@@ -73,10 +74,10 @@ function buildBackgroundPrompt({
     passengerType === "infant"
       ? "Age: infant (under 2)"
       : passengerType === "child"
-        ? "Age: child (2–17)"
-        : passengerType === "senior"
-          ? "Age: senior (above 65)"
-          : "Age: adult (18–65)";
+      ? "Age: child (2–17)"
+      : passengerType === "senior"
+      ? "Age: senior (above 65)"
+      : "Age: adult (18–65)";
 
   return `Generate a fictional character background story for this character:
 
@@ -124,7 +125,9 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
   const findBestPassengerRoot = () => {
     // Find containers that look like a passenger section (contain both name inputs).
     const candidates = Array.from(
-      document.querySelectorAll('input[name="first-name"], input[name="firstName"]'),
+      document.querySelectorAll(
+        'input[name="first-name"], input[name="firstName"]'
+      )
     )
       .map((inp) => inp.parentElement)
       .map((el) => el?.closest?.("div"))
@@ -181,7 +184,9 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
   const firstNameInput =
     passengerRoot.querySelector?.('input[name="first-name"]') ||
     passengerRoot.querySelector?.('input[name="firstName"]') ||
-    passengerRoot.querySelector?.('input[nagish-text="passenger first name"]') ||
+    passengerRoot.querySelector?.(
+      'input[nagish-text="passenger first name"]'
+    ) ||
     document.querySelector('input[name="first-name"]') ||
     document.querySelector('input[name="firstName"]') ||
     document.querySelector('input[nagish-text="passenger first name"]');
@@ -201,11 +206,17 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
     passengerRoot.querySelector?.('[id$="birthdatePicker"]') || passengerRoot;
   const allSelects = Array.from(
     (birthPicker || document).querySelectorAll?.("select") ||
-      document.querySelectorAll("select"),
+      document.querySelectorAll("select")
   );
-  const yearSelect = allSelects.find((s) => s.querySelector('option[value="YYYY"]'));
-  const monthSelect = allSelects.find((s) => s.querySelector('option[value="MM"]'));
-  const daySelect = allSelects.find((s) => s.querySelector('option[value="DD"]'));
+  const yearSelect = allSelects.find((s) =>
+    s.querySelector('option[value="YYYY"]')
+  );
+  const monthSelect = allSelects.find((s) =>
+    s.querySelector('option[value="MM"]')
+  );
+  const daySelect = allSelects.find((s) =>
+    s.querySelector('option[value="DD"]')
+  );
 
   const okYear = yyyy ? setSelectValueWithEvents(yearSelect, yyyy) : false;
   const okMonth = mm ? setSelectValueWithEvents(monthSelect, mm) : false;
@@ -351,7 +362,7 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
             const err = chrome.runtime?.lastError;
             if (err) return reject(err);
             return resolve(res);
-          },
+          }
         );
       });
 
@@ -368,7 +379,9 @@ export default function NameGeneratorTab({ inputValue, setInputValue }) {
         result.okMonth &&
         result.okDay;
 
-      setFillMessage(okAll ? "Form filled!" : "Partially filled (check fields).");
+      setFillMessage(
+        okAll ? "Form filled!" : "Partially filled (check fields)."
+      );
     } catch (error) {
       setErrorMessage(error?.message || "Failed to fill form");
     }

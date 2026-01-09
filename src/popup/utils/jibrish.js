@@ -51,6 +51,9 @@ const ENG_TO_HEB = {
   X: "ס",
   Y: "ט",
   Z: "ז",
+  // punctuation on Hebrew keyboard layout
+  ",": "ת",
+  ".": "ץ",
 };
 
 const HEB_TO_ENG = Object.entries(ENG_TO_HEB).reduce((acc, [eng, heb]) => {
