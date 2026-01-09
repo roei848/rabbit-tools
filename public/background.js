@@ -286,8 +286,12 @@ function fillPassengerForm({ firstName, lastName, passengerType }) {
     let el = active;
     while (el && el !== document.documentElement) {
       if (el.querySelector) {
-        const hasFirst = el.querySelector('input[name="first-name"]');
-        const hasLast = el.querySelector('input[name="last-name"]');
+        const hasFirst =
+          el.querySelector('input[name="first-name"]') ||
+          el.querySelector('input[name="firstName"]');
+        const hasLast =
+          el.querySelector('input[name="last-name"]') ||
+          el.querySelector('input[name="lastName"]');
         const hasBirth =
           el.querySelector('[id$="birthdatePicker"]') ||
           (el.querySelector('select option[value="YYYY"]') &&
@@ -312,12 +316,12 @@ function fillPassengerForm({ firstName, lastName, passengerType }) {
     );
 
     for (const base of candidateBases) {
-      const fn = document.querySelector(
-        `input[name="first-name"][tabindex="${base}"]`,
-      );
-      const ln = document.querySelector(
-        `input[name="last-name"][tabindex="${base + 1}"]`,
-      );
+      const fn =
+        document.querySelector(`input[name="first-name"][tabindex="${base}"]`) ||
+        document.querySelector(`input[name="firstName"][tabindex="${base}"]`);
+      const ln =
+        document.querySelector(`input[name="last-name"][tabindex="${base + 1}"]`) ||
+        document.querySelector(`input[name="lastName"][tabindex="${base + 1}"]`);
       const day = document.querySelector(`select[tabindex="${base + 2}"]`);
       const month = document.querySelector(`select[tabindex="${base + 3}"]`);
       const year = document.querySelector(`select[tabindex="${base + 4}"]`);
@@ -352,14 +356,18 @@ function fillPassengerForm({ firstName, lastName, passengerType }) {
   const firstNameInput =
     tabGroup?.fn ||
     passengerRoot?.querySelector?.('input[name="first-name"]') ||
+    passengerRoot?.querySelector?.('input[name="firstName"]') ||
     passengerRoot?.querySelector?.('input[nagish-text="passenger first name"]') ||
     document.querySelector('input[name="first-name"]') ||
+    document.querySelector('input[name="firstName"]') ||
     document.querySelector('input[nagish-text="passenger first name"]');
   const lastNameInput =
     tabGroup?.ln ||
     passengerRoot?.querySelector?.('input[name="last-name"]') ||
+    passengerRoot?.querySelector?.('input[name="lastName"]') ||
     passengerRoot?.querySelector?.('input[nagish-text="passenger last name"]') ||
     document.querySelector('input[name="last-name"]') ||
+    document.querySelector('input[name="lastName"]') ||
     document.querySelector('input[nagish-text="passenger last name"]');
 
   const okFirst = setInputValueWithEvents(firstNameInput, firstName);

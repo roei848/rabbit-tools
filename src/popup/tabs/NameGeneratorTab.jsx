@@ -124,7 +124,7 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
   const findBestPassengerRoot = () => {
     // Find containers that look like a passenger section (contain both name inputs).
     const candidates = Array.from(
-      document.querySelectorAll('input[name="first-name"]'),
+      document.querySelectorAll('input[name="first-name"], input[name="firstName"]'),
     )
       .map((inp) => inp.parentElement)
       .map((el) => el?.closest?.("div"))
@@ -133,8 +133,10 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
         let cur = el;
         while (cur && cur !== document.documentElement) {
           if (
-            cur.querySelector?.('input[name="first-name"]') &&
-            cur.querySelector?.('input[name="last-name"]')
+            (cur.querySelector?.('input[name="first-name"]') ||
+              cur.querySelector?.('input[name="firstName"]')) &&
+            (cur.querySelector?.('input[name="last-name"]') ||
+              cur.querySelector?.('input[name="lastName"]'))
           ) {
             return cur;
           }
@@ -146,8 +148,12 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
 
     // Prefer the first passenger block with empty name fields.
     const emptyOne = candidates.find((root) => {
-      const fn = root.querySelector('input[name="first-name"]');
-      const ln = root.querySelector('input[name="last-name"]');
+      const fn =
+        root.querySelector('input[name="first-name"]') ||
+        root.querySelector('input[name="firstName"]');
+      const ln =
+        root.querySelector('input[name="last-name"]') ||
+        root.querySelector('input[name="lastName"]');
       return (fn && !fn.value) || (ln && !ln.value);
     });
 
@@ -174,13 +180,17 @@ function fillPassengerForm({ firstName, lastName, birthdate }) {
   const passengerRoot = findBestPassengerRoot();
   const firstNameInput =
     passengerRoot.querySelector?.('input[name="first-name"]') ||
+    passengerRoot.querySelector?.('input[name="firstName"]') ||
     passengerRoot.querySelector?.('input[nagish-text="passenger first name"]') ||
     document.querySelector('input[name="first-name"]') ||
+    document.querySelector('input[name="firstName"]') ||
     document.querySelector('input[nagish-text="passenger first name"]');
   const lastNameInput =
     passengerRoot.querySelector?.('input[name="last-name"]') ||
+    passengerRoot.querySelector?.('input[name="lastName"]') ||
     passengerRoot.querySelector?.('input[nagish-text="passenger last name"]') ||
     document.querySelector('input[name="last-name"]') ||
+    document.querySelector('input[name="lastName"]') ||
     document.querySelector('input[nagish-text="passenger last name"]');
 
   const okFirst = setInputValueWithEvents(firstNameInput, firstName);
